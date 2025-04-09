@@ -3,57 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple First-Person Map v2</title>
+    <title>TEST - Static Test</title>
     <style>
         /* Basic Setup */
         body, html {
-            height: 100%;
-            margin: 0;
-            overflow: hidden; /* Prevent scrollbars */
-            background-color: #333; /* This is the 'gray' background if nothing renders */
-            font-family: sans-serif;
-            color: white;
-            display: flex; /* Use flexbox for centering */
-            justify-content: center;
-            align-items: center;
+            height: 100%; margin: 0; overflow: hidden;
+            background-color: #111; /* Darker BG to contrast */
+            font-family: sans-serif; color: white;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        #instructions {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-size: 1em;
-            z-index: 10; /* Ensure it's above the scene */
+        #instructions { /* Keep instructions for context */
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0,0,0,0.7); padding: 10px 15px;
+            border-radius: 8px; font-size: 1em; z-index: 10;
             max-width: 250px;
         }
 
         /* Scene Setup */
         .scene {
-            width: 100%; /* Take full viewport width */
-            height: 100%; /* Take full viewport height */
-            perspective: 1000px; /* MODIFIED: Slightly increased perspective */
-            perspective-origin: 50% 50%; /* View from center */
-            position: relative; /* Needed for absolute positioning of world */
+            width: 100%; height: 100%;
+            border: 2px dotted yellow; /* Make scene boundary visible */
+            perspective: 1000px;
+            perspective-origin: 50% 50%;
+            position: relative;
         }
 
         .world {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             position: absolute;
             transform-style: preserve-3d;
-            /* Initial position/rotation will be set by JS */
+            /* --- STATIC VIEW TRANSFORM (JS Disabled) --- */
+            /* Move world down slightly, rotate slightly, push away from camera */
+            transform: translateY(-50px) rotateY(20deg) translateZ(-300px);
+            border: 2px dashed red; /* Make world boundary visible */
         }
 
         /* Map Element Base Styles */
         .map-element {
-            position: absolute;
-            top: 50%;
-            left: 50%;
+            position: absolute; top: 50%; left: 50%;
             transform-style: preserve-3d;
-            background-color: rgba(150, 150, 150, 0.9);
             border: 1px solid rgba(50, 50, 50, 0.9);
             box-sizing: border-box;
             backface-visibility: hidden;
@@ -65,235 +54,119 @@
             --map-depth: 800px;
             --wall-height: 200px;
             --box-size: 60px;
-            --player-height: 50px; /* How high the 'camera' is off the ground */
+            --player-height: 50px;
         }
 
-        /* --- Environment Elements --- */
+        /* --- Environment Elements (Simplified Transforms for Testing) --- */
 
         .floor {
             width: var(--map-width);
             height: var(--map-depth);
-            background-color: #5a8a5a;
-            transform: translate(-50%, -50%) rotateX(90deg) translateZ(0px);
+            background-color: lime; /* BRIGHT color */
+            /* TEST: Simple transform - just center and rotate flat */
+            transform: translate(-50%, -50%) rotateX(90deg);
+             /* Ensure it's not clashing with world Z transform */
+            /* transform: translate(-50%, -50%) rotateX(90deg) translateZ(1px); */
         }
 
-        .ceiling { /* Optional */
-             width: var(--map-width);
-             height: var(--map-depth);
-             background-color: #777;
-             /* Position ceiling based on wall height */
-             transform: translate(-50%, -50%) rotateX(-90deg) translateZ(calc(var(--wall-height) * -1));
-             opacity: 0.85; /* MODIFIED: Slightly more opaque */
-        }
-
-        /* --- Walls --- */
-        .wall {
-            width: var(--map-width);
-            height: var(--wall-height);
-            background-color: #8b7e66;
-            transform-origin: center center;
-            /* Position walls based on world origin, offsetting Y by half height */
-        }
-
-        .wall-front {
-            transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) translateZ(calc(var(--map-depth) / 2));
-        }
-
-        .wall-back {
-            transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) rotateY(180deg) translateZ(calc(var(--map-depth) / 2));
-        }
-
-        .wall-left {
-            width: var(--map-depth);
-            transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) rotateY(-90deg) translateZ(calc(var(--map-width) / 2));
-        }
-
-        .wall-right {
-            width: var(--map-depth);
-            transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) rotateY(90deg) translateZ(calc(var(--map-width) / 2));
-        }
-
-        /* --- Boxes / Obstacles --- */
-        .box {
-            width: var(--box-size);
-            height: var(--box-size);
-            background-color: #8B4513; /* Using inherited color now */
-        }
-        .box-face {
-             position: absolute;
-             width: 100%;
-             height: 100%;
-             background-color: #8B4513; /* SaddleBrown */
-             border: 1px solid #5a2d0c;
-             opacity: 0.95;
-             backface-visibility: hidden;
-        }
-
-        /* Position the faces of a box */
-        .face-front  { transform: translateZ(calc(var(--box-size) / 2)); }
-        .face-back   { transform: rotateY(180deg) translateZ(calc(var(--box-size) / 2)); }
-        .face-left   { transform: rotateY(-90deg) translateZ(calc(var(--box-size) / 2)); }
-        .face-right  { transform: rotateY(90deg) translateZ(calc(var(--box-size) / 2)); }
-        .face-top    { transform: rotateX(90deg) translateZ(calc(var(--box-size) / 2)); }
-        .face-bottom { transform: rotateX(-90deg) translateZ(calc(var(--box-size) / 2)); }
-
-        /* Specific Box Positions (Translate the whole box group) */
-        /* Y position lifts box bottom to floor level (Y=0) */
-        #box1 {
-            transform: translate3d(-150px, calc(var(--box-size)/-2), 100px);
-        }
-        #box2 {
-            transform: translate3d(180px, calc(var(--box-size)/-2), -50px);
-        }
-         #box3 { /* Stacked box */
-            transform: translate3d(180px, calc(var(--box-size)/-2 - var(--box-size)), -50px);
+        /* --- Walls (Keep complex transforms for now, see if floor shows) --- */
+         .wall {
+             width: var(--map-width); height: var(--wall-height);
+             background-color: cyan; /* BRIGHT color */
+             transform-origin: center center;
          }
-         #box4 {
-            transform: translate3d(50px, calc(var(--box-size)/-2), 200px);
-         }
+         .wall-front { transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) translateZ(calc(var(--map-depth) / 2)); }
+         .wall-back { transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) rotateY(180deg) translateZ(calc(var(--map-depth) / 2)); }
+         .wall-left { width: var(--map-depth); transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) rotateY(-90deg) translateZ(calc(var(--map-width) / 2)); }
+         .wall-right { width: var(--map-depth); transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) rotateY(90deg) translateZ(calc(var(--map-width) / 2)); }
+
+        /* --- Boxes (Keep as is for now) --- */
+         .box { width: var(--box-size); height: var(--box-size); background-color: magenta; /* BRIGHT color */ }
+         .box-face { position: absolute; width: 100%; height: 100%; background-color: inherit; border: 1px solid #5a2d0c; opacity: 0.95; backface-visibility: hidden;}
+         .face-front  { transform: translateZ(calc(var(--box-size) / 2)); }
+         .face-back   { transform: rotateY(180deg) translateZ(calc(var(--box-size) / 2)); }
+         .face-left   { transform: rotateY(-90deg) translateZ(calc(var(--box-size) / 2)); }
+         .face-right  { transform: rotateY(90deg) translateZ(calc(var(--box-size) / 2)); }
+         .face-top    { transform: rotateX(90deg) translateZ(calc(var(--box-size) / 2)); }
+         .face-bottom { transform: rotateX(-90deg) translateZ(calc(var(--box-size) / 2)); }
+         #box1 { transform: translate3d(-150px, calc(var(--box-size)/-2), 100px); }
+         #box2 { transform: translate3d(180px, calc(var(--box-size)/-2), -50px); }
+         #box3 { transform: translate3d(180px, calc(var(--box-size)/-2 - var(--box-size)), -50px); }
+         #box4 { transform: translate3d(50px, calc(var(--box-size)/-2), 200px); }
 
     </style>
 </head>
 <body>
     <div id="instructions">
-        <b>Controls:</b><br>
+        <b>Controls:</b> (DISABLED FOR TEST)<br>
         W / Up Arrow: Move Forward<br>
         S / Down Arrow: Move Backward<br>
         A / Left Arrow: Turn Left<br>
         D / Right Arrow: Turn Right<br>
-        <i>(Mouse cursor remains visible)</i>
+        <i>(Mouse cursor remains visible)</i><br><br>
+        <b>DEBUG: See if LIME floor is visible. Check Console (F12).</b>
     </div>
 
     <div class="scene">
         <div class="world">
+            <!-- Environment -->
             <div class="map-element floor"></div>
-            <div class="map-element ceiling"></div> <div class="map-element wall wall-front"></div>
+            <!-- Ceiling Removed for test -->
+
+            <!-- Walls -->
+            <div class="map-element wall wall-front"></div>
             <div class="map-element wall wall-back"></div>
             <div class="map-element wall wall-left"></div>
             <div class="map-element wall wall-right"></div>
 
-            <div class="map-element box" id="box1">
-                <div class="box-face face-front"></div><div class="box-face face-back"></div>
-                <div class="box-face face-left"></div><div class="box-face face-right"></div>
-                <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
-            </div>
-            <div class="map-element box" id="box2">
-                <div class="box-face face-front"></div><div class="box-face face-back"></div>
-                <div class="box-face face-left"></div><div class="box-face face-right"></div>
-                <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
-            </div>
-             <div class="map-element box" id="box3"> <div class="box-face face-front"></div><div class="box-face face-back"></div>
-                <div class="box-face face-left"></div><div class="box-face face-right"></div>
-                <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
-            </div>
-             <div class="map-element box" id="box4">
-                <div class="box-face face-front"></div><div class="box-face face-back"></div>
-                <div class="box-face face-left"></div><div class="box-face face-right"></div>
-                <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
-            </div>
+            <!-- Obstacles -->
+            <div class="map-element box" id="box1"> <div class="box-face face-front"></div> ... </div>
+            <div class="map-element box" id="box2"> <div class="box-face face-front"></div> ... </div>
+            <div class="map-element box" id="box3"> <div class="box-face face-front"></div> ... </div>
+            <div class="map-element box" id="box4"> <div class="box-face face-front"></div> ... </div>
+            <!-- NOTE: Box face divs truncated for brevity, copy full divs from previous code -->
+
         </div>
     </div>
 
     <script>
+        // JAVASCRIPT DISABLED FOR STATIC RENDER TEST
+        /*
         const world = document.querySelector('.world');
         const scene = document.querySelector('.scene');
+        // ... (rest of JS state variables) ...
+        // ... (event listeners) ...
 
-        // --- Player State ---
-        let playerX = 0;
-        let playerZ = -150; // MODIFIED: Start slightly further back from origin
-        let playerY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--player-height'));
-        let playerAngleY = 0;
-        let moveSpeed = 4.5;
-        let turnSpeed = 2.5;
-
-        // --- Input State ---
-        const keysPressed = {
-            forward: false,
-            backward: false,
-            left: false,
-            right: false
-        };
-
-        // --- Map Boundaries ---
-        const mapWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--map-width'));
-        const mapDepth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--map-depth'));
-        const wallBuffer = 20;
-
-        const boundary = {
-            xMin: -mapWidth / 2 + wallBuffer,
-            xMax: mapWidth / 2 - wallBuffer,
-            zMin: -mapDepth / 2 + wallBuffer,
-            zMax: mapDepth / 2 - wallBuffer
-        };
-
-        // --- Event Listeners ---
-        window.addEventListener('keydown', (e) => {
-            // Prevent default browser action for arrow keys
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                e.preventDefault();
-            }
-            switch (e.key) {
-                case 'w': case 'ArrowUp': keysPressed.forward = true; break;
-                case 's': case 'ArrowDown': keysPressed.backward = true; break;
-                case 'a': case 'ArrowLeft': keysPressed.left = true; break;
-                case 'd': case 'ArrowRight': keysPressed.right = true; break;
-            }
-        });
-
-        window.addEventListener('keyup', (e) => {
-            switch (e.key) {
-                case 'w': case 'ArrowUp': keysPressed.forward = false; break;
-                case 's': case 'ArrowDown': keysPressed.backward = false; break;
-                case 'a': case 'ArrowLeft': keysPressed.left = false; break;
-                case 'd': case 'ArrowRight': keysPressed.right = false; break;
-            }
-        });
-
-        // --- Game Loop ---
         function gameLoop() {
-            let dx = 0;
-            let dz = 0;
-            let angleRad = playerAngleY * Math.PI / 180;
+            // ... (movement logic) ...
 
-            // Calculate movement delta
-            if (keysPressed.forward) {
-                dx += Math.sin(angleRad) * moveSpeed;
-                dz += Math.cos(angleRad) * moveSpeed;
-            }
-            if (keysPressed.backward) {
-                dx -= Math.sin(angleRad) * moveSpeed;
-                dz -= Math.cos(angleRad) * moveSpeed;
-            }
-
-            // Calculate turning
-            if (keysPressed.left) { playerAngleY -= turnSpeed; }
-            if (keysPressed.right) { playerAngleY += turnSpeed; }
-
-            // Calculate potential new position
-            let nextPlayerX = playerX + dx;
-            let nextPlayerZ = playerZ + dz;
-
-            // Boundary Collision Detection
-            if (nextPlayerX > boundary.xMin && nextPlayerX < boundary.xMax) {
-                 playerX = nextPlayerX;
-            }
-            if (nextPlayerZ > boundary.zMin && nextPlayerZ < boundary.zMax) {
-                 playerZ = nextPlayerZ;
-            }
-
-            // Update world transform
-            // Moves world opposite to player movement/rotation and offsets by player height
-            world.style.transform = `translateY(${-playerY}px) rotateY(${-playerAngleY}deg) translateX(${-playerX}px) translateZ(${-playerZ}px)`;
-
-            // Cursor behavior: Cursor is NOT locked or hidden by this script.
-            // It remains visible and controllable by the OS as standard.
+            // --- JS TRANSFORM DISABLED ---
+            // world.style.transform = `translateY(${-playerY}px) rotateY(${-playerAngleY}deg) translateX(${-playerX}px) translateZ(${-playerZ}px)`;
 
             requestAnimationFrame(gameLoop);
         }
+        // Start the loop - DISABLED
+        // requestAnimationFrame(gameLoop);
+        */
 
-        // Start the loop
-        requestAnimationFrame(gameLoop);
+       // Add a console message to confirm JS is running at all
+       console.log("Static test page loaded. JS is present but game loop is disabled.");
+       console.log("Check if the LIME floor and other colored elements are visible.");
+       console.log("Please report any errors shown in the Console (F12).");
 
     </script>
+    <!-- Need to re-add the full box face divs here -->
+     <script>
+        // Quick fix to re-add box faces without pasting huge block above
+         document.querySelectorAll('.box').forEach(box => {
+             if (!box.querySelector('.box-face')) { // Add faces if missing
+                box.innerHTML = `
+                    <div class="box-face face-front"></div><div class="box-face face-back"></div>
+                    <div class="box-face face-left"></div><div class="box-face face-right"></div>
+                    <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
+                `;
+             }
+         });
+     </script>
 </body>
 </html>
