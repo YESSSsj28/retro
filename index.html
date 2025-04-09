@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple 3D Map</title>
+    <title>Simple First-Person Map</title>
     <style>
         /* Basic Setup */
         body, html {
@@ -13,217 +13,320 @@
             background-color: #333;
             font-family: sans-serif;
             color: white;
-            display: flex;
+            display: flex; /* Use flexbox for centering */
             justify-content: center;
             align-items: center;
-            flex-direction: column;
         }
 
         #instructions {
             position: absolute;
             top: 10px;
             left: 10px;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.9em;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 1em;
+            z-index: 10; /* Ensure it's above the scene */
+            max-width: 250px;
         }
 
         /* Scene Setup */
         .scene {
-            width: 80vmin; /* Use viewport units for responsiveness */
-            height: 80vmin;
-            perspective: 1000px; /* How far away the scene is viewed from */
-            border: 1px dashed #555; /* Optional: visualize scene boundary */
+            width: 100%; /* Take full viewport width */
+            height: 100%; /* Take full viewport height */
+            perspective: 800px; /* Closer perspective for FP */
+            perspective-origin: 50% 50%; /* View from center */
+            position: relative; /* Needed for absolute positioning of world */
         }
 
         .world {
-            width: 100%;
+            width: 100%; /* Doesn't really define world size, transforms do */
             height: 100%;
-            position: relative;
+            position: absolute;
             transform-style: preserve-3d;
-            /* Start tilted slightly for a better initial view */
-            transform: rotateX(-30deg) rotateY(30deg);
-            transition: transform 0.1s linear; /* Smooth rotation slightly */
+            /* Initial position/rotation will be set by JS */
+            /* Add transition for smoother visual updates ONLY if needed,
+               but direct manipulation in game loop is often better */
+            /* transition: transform 0.05s linear; */
         }
 
         /* Map Element Base Styles */
         .map-element {
             position: absolute;
-            /* Center elements by default before transforming */
+            /* Center elements by default - easier for translation logic */
             top: 50%;
             left: 50%;
-            transform-style: preserve-3d; /* Allow children to be 3D */
-            background-color: rgba(150, 150, 150, 0.8); /* Default color */
-            border: 1px solid rgba(50, 50, 50, 0.8);
+            transform-style: preserve-3d;
+            background-color: rgba(150, 150, 150, 0.9);
+            border: 1px solid rgba(50, 50, 50, 0.9);
             box-sizing: border-box;
+            /* Backface culling can improve performance slightly */
+            backface-visibility: hidden;
         }
 
-        /* Map Dimensions (using CSS variables for easy changes) */
+        /* Map Dimensions (using CSS variables) */
         :root {
-            --map-width: 400px;
-            --map-depth: 400px;
-            --wall-height: 100px;
-            --ramp-width: 80px;
-            --ramp-length: 180px;
-            --ramp-angle: 65deg; /* Angle ramp tilts upwards */
+            --map-width: 800px;
+            --map-depth: 800px;
+            --wall-height: 200px; /* Taller walls for FP */
+            --box-size: 60px; /* Size of the hideable boxes */
+            --player-height: 50px; /* How high the 'camera' is off the ground */
         }
 
-        /* --- Map Elements --- */
+        /* --- Environment Elements --- */
 
         .floor {
             width: var(--map-width);
-            height: var(--map-depth); /* Use height for depth in 3D */
+            height: var(--map-depth);
             background-color: #5a8a5a; /* Greenish floor */
-            /*
-               Rotate flat (90deg on X) and move down half the wall height
-               Negative translateZ moves it "away" from the viewer along its new Z axis
-               We position origin at center of floor height, so move down half wall height
-            */
-            transform: translate(-50%, -50%) rotateX(90deg) translateZ(calc(var(--wall-height) / -2));
+            /* Rotate flat and position it relative to world origin (0,0,0) */
+            transform: translate(-50%, -50%) rotateX(90deg) translateZ(0px); /* Floor at Y=0 */
         }
+
+        .ceiling { /* Optional: Add a ceiling */
+             width: var(--map-width);
+             height: var(--map-depth);
+             background-color: #777;
+             transform: translate(-50%, -50%) rotateX(-90deg) translateZ(calc(var(--wall-height) * -1));
+             opacity: 0.8;
+        }
+
 
         /* --- Walls --- */
         .wall {
             width: var(--map-width);
             height: var(--wall-height);
             background-color: #8b7e66; /* Tan walls */
-            /* Center the wall's origin */
             transform-origin: center center;
+            /* Position walls based on world origin */
         }
 
         .wall-front {
-             /* Move "forward" half the map depth */
-            transform: translate(-50%, -50%) translateZ(calc(var(--map-depth) / 2));
+            transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) translateZ(calc(var(--map-depth) / 2));
         }
 
         .wall-back {
-            /* Rotate 180deg, then move "forward" (which is now backward) */
-            transform: translate(-50%, -50%) rotateY(180deg) translateZ(calc(var(--map-depth) / 2));
+            transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) rotateY(180deg) translateZ(calc(var(--map-depth) / 2));
         }
 
         .wall-left {
-            width: var(--map-depth); /* Left/Right walls use map depth as their width */
-            /* Rotate -90deg, then move "forward" (which is now left) */
-            transform: translate(-50%, -50%) rotateY(-90deg) translateZ(calc(var(--map-width) / 2));
+            width: var(--map-depth);
+            transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) rotateY(-90deg) translateZ(calc(var(--map-width) / 2));
         }
 
         .wall-right {
-            width: var(--map-depth); /* Left/Right walls use map depth as their width */
-             /* Rotate 90deg, then move "forward" (which is now right) */
-            transform: translate(-50%, -50%) rotateY(90deg) translateZ(calc(var(--map-width) / 2));
+            width: var(--map-depth);
+            transform: translate(-50%, -50%) translateY(calc(var(--wall-height)/-2)) rotateY(90deg) translateZ(calc(var(--map-width) / 2));
         }
 
-        /* --- Ramps --- */
-        .ramp {
-            width: var(--ramp-width);
-            height: var(--ramp-length); /* Height becomes the length on the slope */
-            background-color: #a0a0a0; /* Grey ramps */
-            transform-origin: center bottom; /* Rotate around the base */
+        /* --- Boxes / Obstacles --- */
+        .box {
+            width: var(--box-size);
+            height: var(--box-size);
+            background-color: #8B4513; /* SaddleBrown */
+            /* We need 6 faces for a cube */
+        }
+        .box-face {
+             position: absolute;
+             width: 100%;
+             height: 100%;
+             background-color: inherit; /* Inherit color from parent .box */
+             border: 1px solid #5a2d0c;
+             opacity: 0.95;
+             backface-visibility: hidden;
         }
 
-        .ramp1 {
-            /*
-              1. translate(-50%, -50%) -> center the origin
-              2. rotateX(var(--ramp-angle)) -> tilt it up
-              3. translateY(calc(var(--wall-height) / 2)) -> move bottom edge down to floor level
-              4. translateZ(calc(var(--map-depth)/2 - var(--ramp-length)/2 * cos(var(--ramp-angle)) - 5px)) -> Move it towards the front edge
-                 (Adjusting Z based on its length and angle projection)
-              5. rotateY(0deg) -> Face forward (redundant here but good for clarity)
+        /* Position the faces of a box */
+        .face-front  { transform: translateZ(calc(var(--box-size) / 2)); }
+        .face-back   { transform: rotateY(180deg) translateZ(calc(var(--box-size) / 2)); }
+        .face-left   { transform: rotateY(-90deg) translateZ(calc(var(--box-size) / 2)); }
+        .face-right  { transform: rotateY(90deg) translateZ(calc(var(--box-size) / 2)); }
+        .face-top    { transform: rotateX(90deg) translateZ(calc(var(--box-size) / 2)); }
+        .face-bottom { transform: rotateX(-90deg) translateZ(calc(var(--box-size) / 2)); }
 
-              Simplified approach: Position base near edge, then rotate.
-            */
-            transform:
-                translate(-50%, calc(-50% + var(--ramp-length) / 2)) /* Shift origin to bottom edge */
-                translateZ(calc(var(--map-depth) / 2 - var(--ramp-length) / 2)) /* Position near front */
-                translateY(calc(var(--wall-height) / 2)) /* Move down to floor level */
-                rotateX(var(--ramp-angle)) /* Tilt */
-                ;
+        /* Specific Box Positions (Translate the whole box group) */
+        /* Remember Y=0 is floor level. We need to lift boxes half their height */
+        #box1 {
+            transform: translate3d(-150px, calc(var(--box-size)/-2), 100px);
         }
-
-        .ramp2 {
-             /* Same logic as ramp1, but rotated 180 degrees and positioned near back */
-             transform:
-                translate(-50%, calc(-50% + var(--ramp-length) / 2)) /* Shift origin to bottom edge */
-                translateZ(calc(var(--map-depth) / -2 + var(--ramp-length) / 2)) /* Position near back */
-                translateY(calc(var(--wall-height) / 2)) /* Move down to floor level */
-                rotateY(180deg) /* Turn around */
-                rotateX(var(--ramp-angle)) /* Tilt */
-             ;
+        #box2 {
+            transform: translate3d(180px, calc(var(--box-size)/-2), -50px);
         }
+         #box3 {
+             /* Stacked box */
+            transform: translate3d(180px, calc(var(--box-size)/-2 - var(--box-size)), -50px);
+         }
+         #box4 {
+            transform: translate3d(50px, calc(var(--box-size)/-2), 200px);
+         }
 
     </style>
 </head>
 <body>
-    <div id="instructions">Move mouse to rotate view</div>
+    <div id="instructions">
+        <b>Controls:</b><br>
+        W / Up Arrow: Move Forward<br>
+        S / Down Arrow: Move Backward<br>
+        A / Left Arrow: Turn Left<br>
+        D / Right Arrow: Turn Right
+    </div>
+
     <div class="scene">
         <div class="world">
             <div class="map-element floor"></div>
-
-            <div class="map-element wall wall-front"></div>
+             <div class="map-element ceiling"></div> <div class="map-element wall wall-front"></div>
             <div class="map-element wall wall-back"></div>
             <div class="map-element wall wall-left"></div>
             <div class="map-element wall wall-right"></div>
 
-            <div class="map-element ramp ramp1"></div>
-            <div class="map-element ramp ramp2"></div>
-        </div>
+            <div class="map-element box" id="box1">
+                <div class="box-face face-front"></div><div class="box-face face-back"></div>
+                <div class="box-face face-left"></div><div class="box-face face-right"></div>
+                <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
+            </div>
+            <div class="map-element box" id="box2">
+                <div class="box-face face-front"></div><div class="box-face face-back"></div>
+                <div class="box-face face-left"></div><div class="box-face face-right"></div>
+                <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
+            </div>
+             <div class="map-element box" id="box3"> <div class="box-face face-front"></div><div class="box-face face-back"></div>
+                <div class="box-face face-left"></div><div class="box-face face-right"></div>
+                <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
+            </div>
+             <div class="map-element box" id="box4">
+                <div class="box-face face-front"></div><div class="box-face face-back"></div>
+                <div class="box-face face-left"></div><div class="box-face face-right"></div>
+                <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
+            </div>
+
+            </div>
     </div>
 
     <script>
-        const scene = document.querySelector('.scene');
         const world = document.querySelector('.world');
+        const scene = document.querySelector('.scene');
 
-        // Initial rotation (matches CSS)
-        let currentRotateX = -30;
-        let currentRotateY = 30;
+        // --- Player State ---
+        let playerX = 0; // Player's position in the world
+        let playerZ = 0;
+        let playerY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--player-height')); // Height off ground
+        let playerAngleY = 0; // Player's looking direction (degrees)
+        let moveSpeed = 4.5; // Units per frame
+        let turnSpeed = 2.5; // Degrees per frame
 
-        // Mouse interaction
-        let isMouseDown = false;
-        let startX, startY;
-        let lastX = 0;
-        let lastY = 0;
-        const rotationSpeed = 0.2; // Adjust sensitivity
+        // --- Input State ---
+        const keysPressed = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false
+        };
 
-        // Use mouse move to rotate (simpler than drag)
-        scene.addEventListener('mousemove', (e) => {
-            // Calculate mouse position relative to the center of the scene
-            const rect = scene.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
+        // --- Map Boundaries (from CSS variables) ---
+        const mapWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--map-width'));
+        const mapDepth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--map-depth'));
+        const wallBuffer = 20; // Prevent getting stuck right on the edge
 
-            const mouseX = e.clientX - centerX;
-            const mouseY = e.clientY - centerY;
+        const boundary = {
+            xMin: -mapWidth / 2 + wallBuffer,
+            xMax: mapWidth / 2 - wallBuffer,
+            zMin: -mapDepth / 2 + wallBuffer,
+            zMax: mapDepth / 2 - wallBuffer
+        };
 
-            // Calculate rotation change based on mouse position from center
-            // Invert Y mouse movement for natural X-axis rotation
-            currentRotateY = 30 + mouseX * rotationSpeed; // Base rotation + mouse X influence
-            currentRotateX = -30 - mouseY * rotationSpeed; // Base rotation + mouse Y influence
 
-            // Clamp X rotation to prevent flipping upside down
-            currentRotateX = Math.max(-89, Math.min(89, currentRotateX));
-
-            world.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+        // --- Event Listeners ---
+        window.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'w':
+                case 'ArrowUp':
+                    keysPressed.forward = true;
+                    break;
+                case 's':
+                case 'ArrowDown':
+                    keysPressed.backward = true;
+                    break;
+                case 'a':
+                case 'ArrowLeft':
+                    keysPressed.left = true;
+                    break;
+                case 'd':
+                case 'ArrowRight':
+                    keysPressed.right = true;
+                    break;
+            }
         });
 
-        // Optional: Stop rotation updates when mouse leaves the scene
-        scene.addEventListener('mouseleave', () => {
-           // Reset to base rotation or keep last? Let's keep last for now.
-           // Or smoothly return to base:
-           // currentRotateX = -30;
-           // currentRotateY = 30;
-           // world.style.transition = 'transform 0.5s ease-out'; // Add smooth return
-           // world.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
-           // setTimeout(() => { // Remove transition after animation
-           //     world.style.transition = 'transform 0.1s linear';
-           // }, 500);
+        window.addEventListener('keyup', (e) => {
+            switch (e.key) {
+                case 'w':
+                case 'ArrowUp':
+                    keysPressed.forward = false;
+                    break;
+                case 's':
+                case 'ArrowDown':
+                    keysPressed.backward = false;
+                    break;
+                case 'a':
+                case 'ArrowLeft':
+                    keysPressed.left = false;
+                    break;
+                case 'd':
+                case 'ArrowRight':
+                    keysPressed.right = false;
+                    break;
+            }
         });
 
-        // Optional: Re-apply base transition on mouse enter
-         scene.addEventListener('mouseenter', () => {
-             world.style.transition = 'transform 0.1s linear';
-         });
+        // --- Game Loop ---
+        function gameLoop() {
+            let dx = 0;
+            let dz = 0;
+            let angleRad = playerAngleY * Math.PI / 180; // Convert degrees to radians
 
+            // Calculate movement delta based on direction and speed
+            if (keysPressed.forward) {
+                dx += Math.sin(angleRad) * moveSpeed;
+                dz += Math.cos(angleRad) * moveSpeed;
+            }
+            if (keysPressed.backward) {
+                dx -= Math.sin(angleRad) * moveSpeed;
+                dz -= Math.cos(angleRad) * moveSpeed;
+            }
+
+            // Calculate turning
+            if (keysPressed.left) {
+                playerAngleY -= turnSpeed;
+            }
+            if (keysPressed.right) {
+                playerAngleY += turnSpeed;
+            }
+
+            // Calculate potential new position
+            let nextPlayerX = playerX + dx;
+            let nextPlayerZ = playerZ + dz;
+
+            // --- Simple Boundary Collision Detection ---
+            if (nextPlayerX > boundary.xMin && nextPlayerX < boundary.xMax) {
+                 playerX = nextPlayerX;
+            }
+            if (nextPlayerZ > boundary.zMin && nextPlayerZ < boundary.zMax) {
+                 playerZ = nextPlayerZ;
+            }
+            // NOTE: No collision with boxes is implemented here!
+
+            // Update the world's transform to simulate camera movement
+            // We move the world in the opposite direction of the player
+            // We rotate the world opposite to the player's view angle
+            // We translate the world UP by the player's height
+            world.style.transform = `translateY(${-playerY}px) rotateY(${-playerAngleY}deg) translateX(${-playerX}px) translateZ(${-playerZ}px)`;
+
+            // Request the next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game loop
+        requestAnimationFrame(gameLoop);
 
     </script>
 </body>
