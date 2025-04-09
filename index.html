@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple First-Person Map</title>
+    <title>Simple First-Person Map v2</title>
     <style>
         /* Basic Setup */
         body, html {
             height: 100%;
             margin: 0;
             overflow: hidden; /* Prevent scrollbars */
-            background-color: #333;
+            background-color: #333; /* This is the 'gray' background if nothing renders */
             font-family: sans-serif;
             color: white;
             display: flex; /* Use flexbox for centering */
@@ -34,33 +34,28 @@
         .scene {
             width: 100%; /* Take full viewport width */
             height: 100%; /* Take full viewport height */
-            perspective: 800px; /* Closer perspective for FP */
+            perspective: 1000px; /* MODIFIED: Slightly increased perspective */
             perspective-origin: 50% 50%; /* View from center */
             position: relative; /* Needed for absolute positioning of world */
         }
 
         .world {
-            width: 100%; /* Doesn't really define world size, transforms do */
+            width: 100%;
             height: 100%;
             position: absolute;
             transform-style: preserve-3d;
             /* Initial position/rotation will be set by JS */
-            /* Add transition for smoother visual updates ONLY if needed,
-               but direct manipulation in game loop is often better */
-            /* transition: transform 0.05s linear; */
         }
 
         /* Map Element Base Styles */
         .map-element {
             position: absolute;
-            /* Center elements by default - easier for translation logic */
             top: 50%;
             left: 50%;
             transform-style: preserve-3d;
             background-color: rgba(150, 150, 150, 0.9);
             border: 1px solid rgba(50, 50, 50, 0.9);
             box-sizing: border-box;
-            /* Backface culling can improve performance slightly */
             backface-visibility: hidden;
         }
 
@@ -68,8 +63,8 @@
         :root {
             --map-width: 800px;
             --map-depth: 800px;
-            --wall-height: 200px; /* Taller walls for FP */
-            --box-size: 60px; /* Size of the hideable boxes */
+            --wall-height: 200px;
+            --box-size: 60px;
             --player-height: 50px; /* How high the 'camera' is off the ground */
         }
 
@@ -78,27 +73,26 @@
         .floor {
             width: var(--map-width);
             height: var(--map-depth);
-            background-color: #5a8a5a; /* Greenish floor */
-            /* Rotate flat and position it relative to world origin (0,0,0) */
-            transform: translate(-50%, -50%) rotateX(90deg) translateZ(0px); /* Floor at Y=0 */
+            background-color: #5a8a5a;
+            transform: translate(-50%, -50%) rotateX(90deg) translateZ(0px);
         }
 
-        .ceiling { /* Optional: Add a ceiling */
+        .ceiling { /* Optional */
              width: var(--map-width);
              height: var(--map-depth);
              background-color: #777;
+             /* Position ceiling based on wall height */
              transform: translate(-50%, -50%) rotateX(-90deg) translateZ(calc(var(--wall-height) * -1));
-             opacity: 0.8;
+             opacity: 0.85; /* MODIFIED: Slightly more opaque */
         }
-
 
         /* --- Walls --- */
         .wall {
             width: var(--map-width);
             height: var(--wall-height);
-            background-color: #8b7e66; /* Tan walls */
+            background-color: #8b7e66;
             transform-origin: center center;
-            /* Position walls based on world origin */
+            /* Position walls based on world origin, offsetting Y by half height */
         }
 
         .wall-front {
@@ -123,14 +117,13 @@
         .box {
             width: var(--box-size);
             height: var(--box-size);
-            background-color: #8B4513; /* SaddleBrown */
-            /* We need 6 faces for a cube */
+            background-color: #8B4513; /* Using inherited color now */
         }
         .box-face {
              position: absolute;
              width: 100%;
              height: 100%;
-             background-color: inherit; /* Inherit color from parent .box */
+             background-color: #8B4513; /* SaddleBrown */
              border: 1px solid #5a2d0c;
              opacity: 0.95;
              backface-visibility: hidden;
@@ -145,15 +138,14 @@
         .face-bottom { transform: rotateX(-90deg) translateZ(calc(var(--box-size) / 2)); }
 
         /* Specific Box Positions (Translate the whole box group) */
-        /* Remember Y=0 is floor level. We need to lift boxes half their height */
+        /* Y position lifts box bottom to floor level (Y=0) */
         #box1 {
             transform: translate3d(-150px, calc(var(--box-size)/-2), 100px);
         }
         #box2 {
             transform: translate3d(180px, calc(var(--box-size)/-2), -50px);
         }
-         #box3 {
-             /* Stacked box */
+         #box3 { /* Stacked box */
             transform: translate3d(180px, calc(var(--box-size)/-2 - var(--box-size)), -50px);
          }
          #box4 {
@@ -168,13 +160,14 @@
         W / Up Arrow: Move Forward<br>
         S / Down Arrow: Move Backward<br>
         A / Left Arrow: Turn Left<br>
-        D / Right Arrow: Turn Right
+        D / Right Arrow: Turn Right<br>
+        <i>(Mouse cursor remains visible)</i>
     </div>
 
     <div class="scene">
         <div class="world">
             <div class="map-element floor"></div>
-             <div class="map-element ceiling"></div> <div class="map-element wall wall-front"></div>
+            <div class="map-element ceiling"></div> <div class="map-element wall wall-front"></div>
             <div class="map-element wall wall-back"></div>
             <div class="map-element wall wall-left"></div>
             <div class="map-element wall wall-right"></div>
@@ -198,8 +191,7 @@
                 <div class="box-face face-left"></div><div class="box-face face-right"></div>
                 <div class="box-face face-top"></div><div class="box-face face-bottom"></div>
             </div>
-
-            </div>
+        </div>
     </div>
 
     <script>
@@ -207,12 +199,12 @@
         const scene = document.querySelector('.scene');
 
         // --- Player State ---
-        let playerX = 0; // Player's position in the world
-        let playerZ = 0;
-        let playerY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--player-height')); // Height off ground
-        let playerAngleY = 0; // Player's looking direction (degrees)
-        let moveSpeed = 4.5; // Units per frame
-        let turnSpeed = 2.5; // Degrees per frame
+        let playerX = 0;
+        let playerZ = -150; // MODIFIED: Start slightly further back from origin
+        let playerY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--player-height'));
+        let playerAngleY = 0;
+        let moveSpeed = 4.5;
+        let turnSpeed = 2.5;
 
         // --- Input State ---
         const keysPressed = {
@@ -222,10 +214,10 @@
             right: false
         };
 
-        // --- Map Boundaries (from CSS variables) ---
+        // --- Map Boundaries ---
         const mapWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--map-width'));
         const mapDepth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--map-depth'));
-        const wallBuffer = 20; // Prevent getting stuck right on the edge
+        const wallBuffer = 20;
 
         const boundary = {
             xMin: -mapWidth / 2 + wallBuffer,
@@ -234,47 +226,26 @@
             zMax: mapDepth / 2 - wallBuffer
         };
 
-
         // --- Event Listeners ---
         window.addEventListener('keydown', (e) => {
+            // Prevent default browser action for arrow keys
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+            }
             switch (e.key) {
-                case 'w':
-                case 'ArrowUp':
-                    keysPressed.forward = true;
-                    break;
-                case 's':
-                case 'ArrowDown':
-                    keysPressed.backward = true;
-                    break;
-                case 'a':
-                case 'ArrowLeft':
-                    keysPressed.left = true;
-                    break;
-                case 'd':
-                case 'ArrowRight':
-                    keysPressed.right = true;
-                    break;
+                case 'w': case 'ArrowUp': keysPressed.forward = true; break;
+                case 's': case 'ArrowDown': keysPressed.backward = true; break;
+                case 'a': case 'ArrowLeft': keysPressed.left = true; break;
+                case 'd': case 'ArrowRight': keysPressed.right = true; break;
             }
         });
 
         window.addEventListener('keyup', (e) => {
             switch (e.key) {
-                case 'w':
-                case 'ArrowUp':
-                    keysPressed.forward = false;
-                    break;
-                case 's':
-                case 'ArrowDown':
-                    keysPressed.backward = false;
-                    break;
-                case 'a':
-                case 'ArrowLeft':
-                    keysPressed.left = false;
-                    break;
-                case 'd':
-                case 'ArrowRight':
-                    keysPressed.right = false;
-                    break;
+                case 'w': case 'ArrowUp': keysPressed.forward = false; break;
+                case 's': case 'ArrowDown': keysPressed.backward = false; break;
+                case 'a': case 'ArrowLeft': keysPressed.left = false; break;
+                case 'd': case 'ArrowRight': keysPressed.right = false; break;
             }
         });
 
@@ -282,9 +253,9 @@
         function gameLoop() {
             let dx = 0;
             let dz = 0;
-            let angleRad = playerAngleY * Math.PI / 180; // Convert degrees to radians
+            let angleRad = playerAngleY * Math.PI / 180;
 
-            // Calculate movement delta based on direction and speed
+            // Calculate movement delta
             if (keysPressed.forward) {
                 dx += Math.sin(angleRad) * moveSpeed;
                 dz += Math.cos(angleRad) * moveSpeed;
@@ -295,37 +266,32 @@
             }
 
             // Calculate turning
-            if (keysPressed.left) {
-                playerAngleY -= turnSpeed;
-            }
-            if (keysPressed.right) {
-                playerAngleY += turnSpeed;
-            }
+            if (keysPressed.left) { playerAngleY -= turnSpeed; }
+            if (keysPressed.right) { playerAngleY += turnSpeed; }
 
             // Calculate potential new position
             let nextPlayerX = playerX + dx;
             let nextPlayerZ = playerZ + dz;
 
-            // --- Simple Boundary Collision Detection ---
+            // Boundary Collision Detection
             if (nextPlayerX > boundary.xMin && nextPlayerX < boundary.xMax) {
                  playerX = nextPlayerX;
             }
             if (nextPlayerZ > boundary.zMin && nextPlayerZ < boundary.zMax) {
                  playerZ = nextPlayerZ;
             }
-            // NOTE: No collision with boxes is implemented here!
 
-            // Update the world's transform to simulate camera movement
-            // We move the world in the opposite direction of the player
-            // We rotate the world opposite to the player's view angle
-            // We translate the world UP by the player's height
+            // Update world transform
+            // Moves world opposite to player movement/rotation and offsets by player height
             world.style.transform = `translateY(${-playerY}px) rotateY(${-playerAngleY}deg) translateX(${-playerX}px) translateZ(${-playerZ}px)`;
 
-            // Request the next frame
+            // Cursor behavior: Cursor is NOT locked or hidden by this script.
+            // It remains visible and controllable by the OS as standard.
+
             requestAnimationFrame(gameLoop);
         }
 
-        // Start the game loop
+        // Start the loop
         requestAnimationFrame(gameLoop);
 
     </script>
