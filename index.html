@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple 3D Map</title>
+    <style>
+        /* Basic Setup */
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            background-color: #333;
+            font-family: sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        /* Scene Setup */
+        .scene {
+            width: 80vmin; /* Use viewport units for responsiveness */
+            height: 80vmin;
+            perspective: 1000px; /* How far away the scene is viewed from */
+            border: 1px dashed #555; /* Optional: visualize scene boundary */
+        }
+
+        .world {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            /* Start tilted slightly for a better initial view */
+            transform: rotateX(-30deg) rotateY(30deg);
+            transition: transform 0.1s linear; /* Smooth rotation slightly */
+        }
+
+        /* Map Element Base Styles */
+        .map-element {
+            position: absolute;
+            /* Center elements by default before transforming */
+            top: 50%;
+            left: 50%;
+            transform-style: preserve-3d; /* Allow children to be 3D */
+            background-color: rgba(150, 150, 150, 0.8); /* Default color */
+            border: 1px solid rgba(50, 50, 50, 0.8);
+            box-sizing: border-box;
+        }
+
+        /* Map Dimensions (using CSS variables for easy changes) */
+        :root {
+            --map-width: 400px;
+            --map-depth: 400px;
+            --wall-height: 100px;
+            --ramp-width: 80px;
+            --ramp-length: 180px;
+            --ramp-angle: 65deg; /* Angle ramp tilts upwards */
+        }
+
+        /* --- Map Elements --- */
+
+        .floor {
+            width: var(--map-width);
+            height: var(--map-depth); /* Use height for depth in 3D */
+            background-color: #5a8a5a; /* Greenish floor */
+            /*
+               Rotate flat (90deg on X) and move down half the wall height
+               Negative translateZ moves it "away" from the viewer along its new Z axis
+               We position origin at center of floor height, so move down half wall height
+            */
+            transform: translate(-50%, -50%) rotateX(90deg) translateZ(calc(var(--wall-height) / -2));
+        }
+
+        /* --- Walls --- */
+        .wall {
+            width: var(--map-width);
+            height: var(--wall-height);
+            background-color: #8b7e66; /* Tan walls */
+            /* Center the wall's origin */
+            transform-origin: center center;
+        }
+
+        .wall-front {
+             /* Move "forward" half the map depth */
+            transform: translate(-50%, -50%) translateZ(calc(var(--map-depth) / 2));
+        }
+
+        .wall-back {
+            /* Rotate 180deg, then move "forward" (which is now backward) */
+            transform: translate(-50%, -50%) rotateY(180deg) translateZ(calc(var(--map-depth) / 2));
+        }
+
+        .wall-left {
+            width: var(--map-depth); /* Left/Right walls use map depth as their width */
+            /* Rotate -90deg, then move "forward" (which is now left) */
+            transform: translate(-50%, -50%) rotateY(-90deg) translateZ(calc(var(--map-width) / 2));
+        }
+
+        .wall-right {
+            width: var(--map-depth); /* Left/Right walls use map depth as their width */
+             /* Rotate 90deg, then move "forward" (which is now right) */
+            transform: translate(-50%, -50%) rotateY(90deg) translateZ(calc(var(--map-width) / 2));
+        }
+
+        /* --- Ramps --- */
+        .ramp {
+            width: var(--ramp-width);
+            height: var(--ramp-length); /* Height becomes the length on the slope */
+            background-color: #a0a0a0; /* Grey ramps */
+            transform-origin: center bottom; /* Rotate around the base */
+        }
+
+        .ramp1 {
+            /*
+              1. translate(-50%, -50%) -> center the origin
+              2. rotateX(var(--ramp-angle)) -> tilt it up
+              3. translateY(calc(var(--wall-height) / 2)) -> move bottom edge down to floor level
+              4. translateZ(calc(var(--map-depth)/2 - var(--ramp-length)/2 * cos(var(--ramp-angle)) - 5px)) -> Move it towards the front edge
+                 (Adjusting Z based on its length and angle projection)
+              5. rotateY(0deg) -> Face forward (redundant here but good for clarity)
+
+              Simplified approach: Position base near edge, then rotate.
+            */
+            transform:
+                translate(-50%, calc(-50% + var(--ramp-length) / 2)) /* Shift origin to bottom edge */
+                translateZ(calc(var(--map-depth) / 2 - var(--ramp-length) / 2)) /* Position near front */
+                translateY(calc(var(--wall-height) / 2)) /* Move down to floor level */
+                rotateX(var(--ramp-angle)) /* Tilt */
+                ;
+        }
+
+        .ramp2 {
+             /* Same logic as ramp1, but rotated 180 degrees and positioned near back */
+             transform:
+                translate(-50%, calc(-50% + var(--ramp-length) / 2)) /* Shift origin to bottom edge */
+                translateZ(calc(var(--map-depth) / -2 + var(--ramp-length) / 2)) /* Position near back */
+                translateY(calc(var(--wall-height) / 2)) /* Move down to floor level */
+                rotateY(180deg) /* Turn around */
+                rotateX(var(--ramp-angle)) /* Tilt */
+             ;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="instructions">Move mouse to rotate view</div>
+    <div class="scene">
+        <div class="world">
+            <div class="map-element floor"></div>
+
+            <div class="map-element wall wall-front"></div>
+            <div class="map-element wall wall-back"></div>
+            <div class="map-element wall wall-left"></div>
+            <div class="map-element wall wall-right"></div>
+
+            <div class="map-element ramp ramp1"></div>
+            <div class="map-element ramp ramp2"></div>
+        </div>
+    </div>
+
+    <script>
+        const scene = document.querySelector('.scene');
+        const world = document.querySelector('.world');
+
+        // Initial rotation (matches CSS)
+        let currentRotateX = -30;
+        let currentRotateY = 30;
+
+        // Mouse interaction
+        let isMouseDown = false;
+        let startX, startY;
+        let lastX = 0;
+        let lastY = 0;
+        const rotationSpeed = 0.2; // Adjust sensitivity
+
+        // Use mouse move to rotate (simpler than drag)
+        scene.addEventListener('mousemove', (e) => {
+            // Calculate mouse position relative to the center of the scene
+            const rect = scene.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            const mouseX = e.clientX - centerX;
+            const mouseY = e.clientY - centerY;
+
+            // Calculate rotation change based on mouse position from center
+            // Invert Y mouse movement for natural X-axis rotation
+            currentRotateY = 30 + mouseX * rotationSpeed; // Base rotation + mouse X influence
+            currentRotateX = -30 - mouseY * rotationSpeed; // Base rotation + mouse Y influence
+
+            // Clamp X rotation to prevent flipping upside down
+            currentRotateX = Math.max(-89, Math.min(89, currentRotateX));
+
+            world.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+        });
+
+        // Optional: Stop rotation updates when mouse leaves the scene
+        scene.addEventListener('mouseleave', () => {
+           // Reset to base rotation or keep last? Let's keep last for now.
+           // Or smoothly return to base:
+           // currentRotateX = -30;
+           // currentRotateY = 30;
+           // world.style.transition = 'transform 0.5s ease-out'; // Add smooth return
+           // world.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+           // setTimeout(() => { // Remove transition after animation
+           //     world.style.transition = 'transform 0.1s linear';
+           // }, 500);
+        });
+
+        // Optional: Re-apply base transition on mouse enter
+         scene.addEventListener('mouseenter', () => {
+             world.style.transition = 'transform 0.1s linear';
+         });
+
+
+    </script>
+</body>
+</html>
