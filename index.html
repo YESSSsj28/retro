@@ -3,56 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Small 3D Map with Walls</title>
+    <title>Enhanced 3D Map Concept</title>
+
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
+
     <style>
         html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; }
         a-scene { height: 100%; width: 100%; }
+
+        /* --- Crosshair CSS --- */
+        #crosshair {
+            position: fixed; /* Position relative to viewport */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Center precisely */
+            width: 10px;
+            height: 10px;
+            border: 1px solid white; /* Simple square crosshair */
+            border-radius: 50%; /* Make it a circle */
+            background-color: rgba(0, 0, 0, 0.3); /* Slight background */
+            mix-blend-mode: difference; /* Helps visibility on different backgrounds */
+            pointer-events: none; /* Ignore mouse events */
+            z-index: 10; /* Ensure it's on top */
+            box-sizing: border-box;
+        }
+        /* Optional: More traditional '+' crosshair using pseudo-elements */
+        /* #crosshair {
+            position: fixed; top: 50%; left: 50%; width: 2px; height: 2px; background: none; pointer-events: none; z-index: 10;
+        }
+        #crosshair::before, #crosshair::after {
+            content: ''; position: absolute; background-color: white; mix-blend-mode: difference;
+        }
+        #crosshair::before { width: 1px; height: 15px; left: 0.5px; top: -7px; }
+        #crosshair::after { height: 1px; width: 15px; top: 0.5px; left: -7px; } */
+
     </style>
 </head>
 <body>
-    <a-scene background="color: #ECECEC">
+    <div id="crosshair"></div>
 
-        <a-light type="ambient" color="#BBB"></a-light>
-        <a-light type="directional" color="#FFF" intensity="0.6" position="-0.5 1 1"></a-light>
+    <a-scene background="color: #ECECEC"
+             physics="driver: cannon; debug: false; gravity: -9.8;" /* Enable Cannon physics, set gravity. Set debug: true to see collision shapes */
+             shadow="type: pcfsoft"> <a-assets>
+             <img id="grassTex" src="GRASS_TEXTURE_URL">
+             <img id="rockTex" src="ROCK_TEXTURE_URL">
+             <img id="woodTex" src="WOOD_TEXTURE_URL">
+             <img id="barkTex" src="BARK_TEXTURE_URL">
+             <img id="waterTex" src="WATER_TEXTURE_URL">
+             <img id="skyTex" src="https://cdn.aframe.io/a-painter/images/sky.jpg"> </a-assets>
 
-        <a-sky color="#87CEEB"></a-sky>
+        <a-light type="ambient" color="#CCC"></a-light>
+        <a-light type="directional"
+                 color="#FFF"
+                 intensity="0.8"
+                 position="-1 1.5 1"
+                 castShadow="true"
+                 shadow-camera-left="-50" shadow-camera-right="50"
+                 shadow-camera-bottom="-50" shadow-camera-top="50"
+                 shadow-map-height="1024" shadow-map-width="1024">
+        </a-light>
+
+        <a-sky src="#skyTex"></a-sky>
 
         <a-plane
             position="0 0 0"
             rotation="-90 0 0"
-            width="100" /* Reduced Size */
-            height="100" /* Reduced Size */
-            color="#4CAF50"
+            width="100"
+            height="100"
+            material="src: #grassTex; color: #4CAF50; repeat: 20 20;" /* Use texture, fallback color, repeat */
+            static-body /* Physics: Immovable ground */
             shadow="receive: true">
         </a-plane>
 
-        <a-box color="#6F4E37" width="100" height="20" depth="1" position="0 10 50" shadow="cast: true; receive: false"></a-box> <a-box color="#6F4E37" width="100" height="20" depth="1" position="0 10 -50" shadow="cast: true; receive: false"></a-box> <a-box color="#6F4E37" width="1" height="20" depth="100" position="50 10 0" shadow="cast: true; receive: false"></a-box> <a-box color="#6F4E37" width="1" height="20" depth="100" position="-50 10 0" shadow="cast: true; receive: false"></a-box> <a-sphere color="#6B8E23" radius="15" position="25 1 -30" scale="1 0.4 1"></a-sphere>
-        <a-sphere color="#556B2F" radius="10" position="35 0.5 -35" scale="1 0.3 1"></a-sphere>
+        <a-box material="src: #rockTex; color: #6F4E37; repeat: 10 2;" width="100" height="20" depth="2" position="0 10 51" static-body shadow="cast: true; receive: true"></a-box> <a-box material="src: #rockTex; color: #6F4E37; repeat: 10 2;" width="100" height="20" depth="2" position="0 10 -51" static-body shadow="cast: true; receive: true"></a-box> <a-box material="src: #rockTex; color: #6F4E37; repeat: 10 2;" width="2" height="20" depth="100" position="51 10 0" static-body shadow="cast: true; receive: true"></a-box> <a-box material="src: #rockTex; color: #6F4E37; repeat: 10 2;" width="2" height="20" depth="100" position="-51 10 0" static-body shadow="cast: true; receive: true"></a-box> <a-sphere material="src: #rockTex; color: #6B8E23;" radius="15" position="25 1 -30" scale="1 0.4 1" static-body shadow="cast: true; receive: true"></a-sphere>
+        <a-sphere material="src: #rockTex; color: #556B2F;" radius="10" position="35 0.5 -35" scale="1 0.3 1" static-body shadow="cast: true; receive: true"></a-sphere>
 
         <a-cylinder
-            color="#33AADD"
+            material="src: #waterTex; color: #33AADD; opacity: 0.8;"
             height="0.2"
             radius="15"
             position="-30 0.1 20"
+            static-body /* Make it collidable, though odd for water */
             shadow="receive: false">
         </a-cylinder>
 
         <a-entity position="30 0 30">
-            <a-box color="#D2691E" width="5" height="8" depth="5" position="0 4 0" shadow="cast: true"></a-box>
-            <a-box color="#A0522D" width="4" height="6" depth="4" position="7 3 2" shadow="cast: true"></a-box>
-            <a-box color="#A0522D" width="3" height="5" depth="6" position="-5 2.5 5" shadow="cast: true"></a-box>
+            <a-box material="src: #woodTex; color: #D2691E;" width="5" height="8" depth="5" position="0 4 0" static-body shadow="cast: true"></a-box>
+            <a-box material="src: #woodTex; color: #A0522D;" width="4" height="6" depth="4" position="7 3 2" static-body shadow="cast: true"></a-box>
+            <a-box material="src: #woodTex; color: #A0522D;" width="3" height="5" depth="6" position="-5 2.5 5" static-body shadow="cast: true"></a-box>
         </a-entity>
 
         <a-entity position="-35 0 -35">
-            <a-cylinder color="#228B22" radius="1" height="8" position="0 4 0" shadow="cast: true"></a-cylinder>
-            <a-cylinder color="#006400" radius="0.8" height="6" position="4 3 2" shadow="cast: true"></a-cylinder>
-            <a-cylinder color="#2E8B57" radius="1.2" height="9" position="-3 4.5 3" shadow="cast: true"></a-cylinder>
-            <a-cylinder color="#006400" radius="0.9" height="7" position="2 3.5 -3" shadow="cast: true"></a-cylinder>
+            <a-cylinder material="src: #barkTex; color: #228B22;" radius="1" height="8" position="0 4 0" static-body shadow="cast: true"></a-cylinder>
+            <a-cylinder material="src: #barkTex; color: #006400;" radius="0.8" height="6" position="4 3 2" static-body shadow="cast: true"></a-cylinder>
+            <a-cylinder material="src: #barkTex; color: #2E8B57;" radius="1.2" height="9" position="-3 4.5 3" static-body shadow="cast: true"></a-cylinder>
+            <a-cylinder material="src: #barkTex; color: #006400;" radius="0.9" height="7" position="2 3.5 -3" static-body shadow="cast: true"></a-cylinder>
          </a-entity>
 
 
-        <a-entity position="0 1.6 10"> <a-camera wasd-controls="acceleration: 60" look-controls="pointerLockEnabled: true"> </a-camera>
+        <a-entity id="player"
+                  position="0 1.6 10"
+                  dynamic-body="shape: sphere; mass: 70; angularDamping: 0.9;" /* Physics body for player */
+                  wasd-controls="acceleration: 0; fly: false;" /* Try disabling acceleration, disable fly. Still not ideal */
+                  >
+            <a-camera id="camera"
+                      look-controls="pointerLockEnabled: true">
+                </a-camera>
         </a-entity>
 
     </a-scene>
