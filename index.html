@@ -1,97 +1,288 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THIS IS A TEST NN</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RETROBOWL-Yug </title>
+<style>
+  /* --- CSS Variables for Theming --- */
+  :root {
+    --bg-color: #f4f7f6; /* Light grey background */
+    --text-color: #333;
+    --iframe-bg: #ffffff; /* White background for iframe container */
+    --button-bg: #007bff;
+    --button-text: #ffffff;
+    --button-hover-bg: #0056b3;
+    --note-text: #555;
+    --border-color: #ccc;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+  }
 
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  [data-theme="dark"] {
+    --bg-color: #2c3e50; /* Dark background */
+    --text-color: #ecf0f1;
+    --iframe-bg: #34495e; /* Darker background for iframe container */
+    --button-bg: #3498db;
+    --button-text: #ffffff;
+    --button-hover-bg: #2980b9;
+    --note-text: #bdc3c7;
+    --border-color: #555;
+    --shadow-color: rgba(0, 0, 0, 0.4);
+  }
 
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
+  /* --- General Styles --- */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
 
-    <style>
-        html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; }
-        a-scene { height: 100%; width: 100%; }
-        #crosshair { /* Same CSS as before */
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 10px; height: 10px; border: 1px solid white; border-radius: 50%;
-            background-color: rgba(0, 0, 0, 0.3); mix-blend-mode: difference;
-            pointer-events: none; z-index: 10; box-sizing: border-box;
-        }
-    </style>
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 850px; /* Max width for content */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--iframe-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    transition: background-color 0.3s;
+  }
+
+  h1 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  /* --- Iframe & Loader --- */
+  .iframe-container {
+    position: relative; /* Needed for loader positioning */
+    width: 100%;
+    max-width: 800px; /* Match iframe width */
+    height: 600px; /* Match iframe height */
+    background-color: #e0e0e0; /* Placeholder background */
+    border-radius: 4px;
+    overflow: hidden; /* Clip iframe corners if needed */
+  }
+
+  #gameLoader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+    color: white;
+    font-size: 1.5em;
+    z-index: 10; /* Above iframe initially */
+    border-radius: 4px;
+  }
+
+  iframe#gameFrame {
+    display: block; /* Removes tiny space below iframe */
+    border: none;
+    width: 100%; /* Fill container */
+    height: 100%; /* Fill container */
+    vertical-align: bottom; /* Another fix for potential spacing issues */
+  }
+
+  /* --- Controls & Notes --- */
+  .controls {
+    display: flex;
+    gap: 15px; /* Space between buttons */
+    margin-top: 20px;
+    align-items: center;
+  }
+
+  button#fullscreenBtn, button#themeToggleBtn {
+    padding: 10px 20px;
+    font-size: 1em;
+    color: var(--button-text);
+    background-color: var(--button-bg);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  button#fullscreenBtn:hover, button#themeToggleBtn:hover {
+    background-color: var(--button-hover-bg);
+  }
+
+  .notes {
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: var(--note-text);
+    text-align: center;
+    max-width: 600px;
+  }
+
+  /* --- Basic Responsiveness --- */
+   @media (max-width: 850px) {
+     .iframe-container {
+        /* Adjust height based on aspect ratio (800/600 = 4/3 = 75%) */
+        height: auto;
+        padding-bottom: 75%; /* Aspect ratio padding hack */
+     }
+     iframe#gameFrame {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+     }
+     .controls {
+        flex-direction: column;
+     }
+   }
+   @media (max-width: 480px) {
+        body { padding: 10px; }
+        .container { padding: 15px; }
+        h1 { font-size: 1.5em; }
+   }
+
+</style>
 </head>
 <body>
-    <div id="crosshair"></div>
 
-    <a-scene background="color: #05050a" /* Very dark background fallback */
-             physics="driver: cannon; debug: false; gravity: -9.8;"
-             fog="type: exponential; color: #1a1a25; density: 0.08;" /* Denser fog, dark color */
-             shadow="type: pcfsoft">
+<div class="container">
+  <h1>Retro Bowl</h1>
 
-        <a-assets>
-             <img id="darkerGrassTex" src="DARKER_GRASS_TEXTURE_URL"> <img id="darkerStoneTex" src="DARKER_STONE_TEXTURE_URL"> <img id="darkerWoodTex" src="DARKER_WOOD_TEXTURE_URL"> <img id="darkerBarkTex" src="DARKER_BARK_TEXTURE_URL"> <img id="murkyWaterTex" src="MURKY_WATER_TEXTURE_URL"> <img id="darkSkyTex" src="DARK_NIGHT_SKY_TEXTURE_URL"> <audio id="ambiance" src="SCARY_AMBIANCE_URL" preload="auto"></audio>
-        </a-assets>
+  <div class="iframe-container">
+    <div id="gameLoader">Loading Game...</div>
 
-        <a-light type="ambient" color="#333" intensity="0.05"></a-light> <a-light type="hemisphere" color="#445566" groundColor="#111122" intensity="0.15"></a-light> <a-light type="point" color="#FF2222" intensity="0" position="35 5 35" distance="30" castShadow="false">
-             <a-animation attribute="light.intensity"
-                          dur="150"
-                          from="0.0"
-                          to="0.6"
-                          direction="alternate"
-                          repeat="indefinite"
-                          easing="ease-in-out-sine">
-             </a-animation>
-             </a-light>
+    <iframe
+        id="gameFrame"
+        src="https://msn-21.github.io/games/retro-bowl/"
+        allowfullscreen="true"
+        title="Retro Bowl Game">
+    </iframe>
+  </div>
+
+  <div class="controls">
+    <button id="fullscreenBtn">Go Fullscreen</button>
+    <button id="themeToggleBtn">Toggle Dark Mode</button>
+  </div>
+
+  <p class="notes">
+    Use the fullscreen button for a better experience. Game progress should save automatically within the game itself.
+  </p>
+</div>
 
 
-        <a-sky src="#darkSkyTex" color="#0a0a15"></a-sky> <a-plane
-            position="0 0 0"
-            rotation="-90 0 0"
-            width="100"
-            height="100"
-            material="src: #darkerGrassTex; color: #2A2A25; repeat: 15 15;" /* Darker texture */
-            static-body
-            shadow="receive: true">
-        </a-plane>
+<script>
+  // --- Element References ---
+  const fullscreenButton = document.getElementById('fullscreenBtn');
+  const gameIframe = document.getElementById('gameFrame');
+  const gameLoader = document.getElementById('gameLoader');
+  const themeToggleButton = document.getElementById('themeToggleBtn');
+  const bodyElement = document.body;
 
-        <a-box material="src: #darkerStoneTex; color: #2D2D2D; repeat: 10 2;" width="100" height="20" depth="2" position="0 10 51" static-body shadow="cast: true; receive: true"></a-box>
-        <a-box material="src: #darkerStoneTex; color: #2D2D2D; repeat: 10 2;" width="100" height="20" depth="2" position="0 10 -51" static-body shadow="cast: true; receive: true"></a-box>
-        <a-box material="src: #darkerStoneTex; color: #2D2D2D; repeat: 10 2;" width="2" height="20" depth="100" position="51 10 0" static-body shadow="cast: true; receive: true"></a-box>
-        <a-box material="src: #darkerStoneTex; color: #2D2D2D; repeat: 10 2;" width="2" height="20" depth="100" position="-51 10 0" static-body shadow="cast: true; receive: true"></a-box>
+  // --- Hide Loader When Iframe Finishes Loading ---
+  gameIframe.addEventListener('load', () => {
+    gameLoader.style.display = 'none'; // Hide the loader
+  });
+  // Fallback: Hide loader after a timeout if 'load' event doesn't fire reliably
+  setTimeout(() => {
+      if (gameLoader) gameLoader.style.display = 'none';
+  }, 8000); // Hide after 8 seconds regardless
 
-        <a-cylinder
-            material="src: #murkyWaterTex; color: #111A2A; opacity: 0.6;" /* Murkier water */
-            height="0.2"
-            radius="15"
-            position="-30 0.1 20"
-            static-body
-            shadow="receive: false">
-        </a-cylinder>
 
-        <a-entity position="30 0 30">
-            <a-box material="src: #darkerWoodTex; color: #3A1A0A;" width="5" height="8" depth="5" position="0 4 0" rotation="0 5 2" static-body shadow="cast: true"></a-box> <a-box material="src: #darkerWoodTex; color: #2B1108;" width="4" height="6" depth="4" position="7 3 2" rotation="0 -8 -3" static-body shadow="cast: true"></a-box> <a-box material="src: #darkerWoodTex; color: #2B1108;" width="3" height="5" depth="6" position="-5 2.5 5" rotation="0 3 4" static-body shadow="cast: true"></a-box> </a-entity>
+  // --- Fullscreen Logic ---
+  function toggleFullScreen() {
+    if (!document.fullscreenElement &&    // Standard
+        !document.mozFullScreenElement && // Firefox
+        !document.webkitFullscreenElement && // Chrome, Safari and Opera
+        !document.msFullscreenElement) {  // IE/Edge
+      // --- Request Fullscreen ---
+      if (gameIframe.requestFullscreen) {
+        gameIframe.requestFullscreen();
+      } else if (gameIframe.mozRequestFullScreen) { /* Firefox */
+        gameIframe.mozRequestFullScreen();
+      } else if (gameIframe.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+        gameIframe.webkitRequestFullscreen();
+      } else if (gameIframe.msRequestFullscreen) { /* IE/Edge */
+        gameIframe.msRequestFullscreen();
+      }
+    } else {
+      // --- Exit Fullscreen ---
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) { /* Firefox */
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { /* IE/Edge */
+        document.msExitFullscreen();
+      }
+    }
+  }
 
-        <a-box material="src: #darkerStoneTex; color: #1A1A1A;" width="4" height="7" depth="4" position="-10 3.5 -40" rotation="0 25 -5" static-body shadow="cast: true"></a-box>
+  fullscreenButton.addEventListener('click', toggleFullScreen);
 
-        <a-entity position="-35 0 -35">
-            <a-cylinder material="src: #darkerBarkTex; color: #2B2111;" radius="1" height="8" position="0 4 0" rotation="3 0 5" static-body shadow="cast: true"></a-cylinder>
-            <a-cylinder material="src: #darkerBarkTex; color: #1E150A;" radius="0.8" height="6" position="4 3 2" rotation="-4 0 -3" static-body shadow="cast: true"></a-cylinder>
-            <a-cylinder material="src: #darkerBarkTex; color: #2B2111;" radius="1.2" height="9" position="-3 4.5 3" rotation="5 0 2" static-body shadow="cast: true"></a-cylinder>
-            <a-cylinder material="src: #darkerBarkTex; color: #1E150A;" radius="0.9" height="7" position="2 3.5 -3" rotation="-2 0 -4" static-body shadow="cast: true"></a-cylinder>
-         </a-entity>
+  // --- Update Button Text on Fullscreen Change ---
+  function updateFullscreenButton() {
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+      fullscreenButton.textContent = 'Exit Fullscreen';
+    } else {
+      fullscreenButton.textContent = 'Go Fullscreen';
+    }
+  }
 
-        <a-entity id="player"
-                  position="0 1.6 10"
-                  dynamic-body="shape: sphere; mass: 70; angularDamping: 0.9;"
-                  wasd-controls="acceleration: 30; fly: false;" /* Even lower acceleration */
-                  >
-            <a-camera id="camera"
-                      look-controls="pointerLockEnabled: true">
-            </a-camera>
-        </a-entity>
+  document.addEventListener('fullscreenchange', updateFullscreenButton);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+  document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+  document.addEventListener('MSFullscreenChange', updateFullscreenButton);
 
-        <a-sound src="#ambiance" autoplay="true" loop="true" volume="0.3" position="0 1.6 0"></a-sound>
 
-    </a-scene>
+  // --- Dark Mode Toggle Logic ---
+  // Function to set theme based on preference
+  function applyTheme(theme) {
+     if (theme === 'dark') {
+       bodyElement.setAttribute('data-theme', 'dark');
+       themeToggleButton.textContent = 'Toggle Light Mode';
+     } else {
+       bodyElement.removeAttribute('data-theme');
+       themeToggleButton.textContent = 'Toggle Dark Mode';
+     }
+  }
+
+  // Check local storage for saved theme preference
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    applyTheme(savedTheme);
+  } else {
+    // Optional: Check system preference if no saved theme
+    // const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // applyTheme(prefersDark ? 'dark' : 'light');
+  }
+
+  // Button click handler
+  themeToggleButton.addEventListener('click', () => {
+    const currentTheme = bodyElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(newTheme);
+    // Save preference to local storage
+    localStorage.setItem('theme', newTheme);
+  });
+
+</script>
+
 </body>
 </html>
