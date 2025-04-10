@@ -1,256 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Game Portal Embed</title> <style>
-  /* --- CSS Variables for Theming --- */
-  :root {
-    --bg-color: #f4f7f6; /* Light grey background */
-    --text-color: #333;
-    --iframe-bg: #ffffff; /* White background for iframe container */
-    --button-bg: #007bff;
-    --button-text: #ffffff;
-    --button-hover-bg: #0056b3;
-    --note-text: #555;
-    --border-color: #ccc;
-    --shadow-color: rgba(0, 0, 0, 0.1);
-  }
-
-  [data-theme="dark"] {
-    --bg-color: #2c3e50; /* Dark background */
-    --text-color: #ecf0f1;
-    --iframe-bg: #34495e; /* Darker background for iframe container */
-    --button-bg: #3498db;
-    --button-text: #ffffff;
-    --button-hover-bg: #2980b9;
-    --note-text: #bdc3c7;
-    --border-color: #555;
-    --shadow-color: rgba(0, 0, 0, 0.4);
-  }
-
-  /* --- General Styles --- */
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-
-  body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    transition: background-color 0.3s, color 0.3s;
-  }
-
-  .container {
-    width: 100%;
-    max-width: 950px; /* Slightly wider for a portal */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: var(--iframe-bg);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px var(--shadow-color);
-    transition: background-color 0.3s;
-  }
-
-  h1 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    text-align: center;
-  }
-
-  /* --- Iframe & Loader --- */
-  .iframe-container {
-    position: relative;
-    width: 100%;
-    max-width: 900px; /* Wider iframe */
-    height: 700px; /* Taller iframe */
-    background-color: #e0e0e0;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  #contentLoader { /* Renamed loader ID slightly */
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    font-size: 1.5em;
-    z-index: 10;
-    border-radius: 4px;
-  }
-
-  iframe#contentFrame { /* Renamed iframe ID slightly */
-    display: block;
-    border: none;
-    width: 100%;
-    height: 100%;
-    vertical-align: bottom;
-  }
-
-  /* --- Controls & Notes --- */
-  .controls {
-    display: flex;
-    gap: 15px;
-    margin-top: 20px;
-    align-items: center;
-  }
-
-  button#fullscreenBtn, button#themeToggleBtn {
-    padding: 10px 20px;
-    font-size: 1em;
-    color: var(--button-text);
-    background-color: var(--button-bg);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
-  }
-
-  button#fullscreenBtn:hover, button#themeToggleBtn:hover {
-    background-color: var(--button-hover-bg);
-  }
-
-  .notes {
-    margin-top: 20px;
-    font-size: 0.9em;
-    color: var(--note-text);
-    text-align: center;
-    max-width: 600px;
-  }
-
-  /* --- Basic Responsiveness --- */
-   @media (max-width: 950px) {
-     .iframe-container {
-        /* Adjust height based on approx portal aspect ratio (e.g., 900/700 ~ 77.7%) */
-        height: auto;
-        padding-bottom: 77.7%;
-     }
-     iframe#contentFrame {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-     }
-   }
-   @media (max-width: 480px) {
-        body { padding: 10px; }
-        .container { padding: 15px; }
-        h1 { font-size: 1.5em; }
-        .controls { flex-direction: column; }
-   }
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Battle Royale Map Concept</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <style>
+        html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; }
+        a-scene { height: 100%; width: 100%; }
+    </style>
 </head>
 <body>
+    <a-scene background="color: #ECECEC"> <a-assets>
+            </a-assets>
 
-<div class="container">
-  <h1>Game Portal</h1> <div class="iframe-container">
-    <div id="contentLoader">Loading Portal...</div> <iframe
-        id="contentFrame"
-        src="https://www.crazygames.com/" allowfullscreen="true"
-        title="CrazyGames Portal Embed"> </iframe>
-  </div>
+        <a-light type="ambient" color="#BBB"></a-light>
+        <a-light type="directional" color="#FFF" intensity="0.6" position="-0.5 1 1"></a-light>
 
-  <div class="controls">
-    <button id="fullscreenBtn">Go Fullscreen</button>
-    <button id="themeToggleBtn">Toggle Dark Mode</button>
-  </div>
+        <a-sky color="#87CEEB"></a-sky> <a-plane
+            position="0 0 0"
+            rotation="-90 0 0"
+            width="500"
+            height="500"
+            color="#4CAF50" /* Simple green color */
+            /* Example using texture: material="src: #grassTexture; repeat: 100 100" */
+            shadow="receive: true">
+        </a-plane>
 
-  <p class="notes">
-    Attempting to load CrazyGames.com. Note: Most portals block embedding. Use fullscreen for potentially better interaction if loading succeeds.
-  </p>
-</div>
+        <a-cone color="#A0A0A0" radius-bottom="30" radius-top="5" height="80" position="-150 40 100"></a-cone>
+        <a-cone color="#888888" radius-bottom="25" radius-top="2" height="65" position="-120 32.5 130"></a-cone>
+        <a-sphere color="#909090" radius="20" position="-170 10 80"></a-sphere>
 
+        <a-cone color="#A0A0A0" radius-bottom="40" radius-top="8" height="100" position="180 50 -150"></a-cone>
+        <a-sphere color="#808080" radius="30" position="150 15 -120"></a-sphere>
+        <a-cone color="#888888" radius-bottom="20" radius-top="1" height="50" position="200 25 -110"></a-cone>
 
-<script>
-  // --- Element References ---
-  const fullscreenButton = document.getElementById('fullscreenBtn');
-  const contentIframe = document.getElementById('contentFrame'); // Updated ID
-  const contentLoader = document.getElementById('contentLoader'); // Updated ID
-  const themeToggleButton = document.getElementById('themeToggleBtn');
-  const bodyElement = document.body;
+        <a-sphere color="#6B8E23" radius="40" position="50 5 80" scale="1 0.5 1"></a-sphere> <a-sphere color="#556B2F" radius="35" position="80 3 -50" scale="1 0.4 1"></a-sphere>
+        <a-sphere color="#6B8E23" radius="50" position="-70 8 -90" scale="1 0.3 1"></a-sphere>
 
-  // --- Hide Loader When Iframe Finishes Loading (or fails) ---
-  contentIframe.addEventListener('load', () => {
-    // NOTE: 'load' might fire even if embedding is blocked but results in an error page inside iframe.
-    contentLoader.style.display = 'none';
-  });
-  setTimeout(() => {
-      if (contentLoader) contentLoader.style.display = 'none';
-  }, 10000); // Hide after 10 seconds
+        <a-cylinder
+            color="#33AADD"
+            height="0.2"
+            radius="60"
+            position="-80 0.1 -10"
+            shadow="receive: false">
+        </a-cylinder>
 
+        <a-entity position="100 0 50">
+            <a-box color="#D2691E" width="10" height="15" depth="10" position="0 7.5 0" shadow="cast: true"></a-box>
+            <a-box color="#A0522D" width="8" height="10" depth="8" position="15 5 5" shadow="cast: true"></a-box>
+            <a-box color="#A0522D" width="7" height="8" depth="12" position="-10 4 10" shadow="cast: true"></a-box>
+            <a-box color="#B8860B" width="5" height="20" depth="5" position="5 10 -15" shadow="cast: true"></a-box> </a-entity>
 
-  // --- Fullscreen Logic ---
-  function toggleFullScreen() {
-    // Check if NOT currently fullscreen
-    if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-      // Request fullscreen for the iframe
-      const el = contentIframe; // Use updated ID
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if (el.msRequestFullscreen) el.msRequestFullscreen();
-    } else {
-      // Exit fullscreen
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      else if (document.msExitFullscreen) document.msExitFullscreen();
-    }
-  }
+        <a-entity position="-50 0 150">
+            <a-box color="#A0522D" width="12" height="10" depth="12" position="0 5 0" shadow="cast: true"></a-box>
+            <a-box color="#D2691E" width="9" height="12" depth="9" position="-15 6 5" shadow="cast: true"></a-box>
+            <a-box color="#A0522D" width="10" height="9" depth="15" position="10 4.5 -10" shadow="cast: true"></a-box>
+        </a-entity>
 
-  fullscreenButton.addEventListener('click', toggleFullScreen);
+         <a-entity position="150 0 150">
+            <a-cylinder color="#228B22" radius="2" height="15" position="0 7.5 0" shadow="cast: true"></a-cylinder>
+            <a-cylinder color="#006400" radius="1.5" height="12" position="10 6 5" shadow="cast: true"></a-cylinder>
+            <a-cylinder color="#228B22" radius="2.5" height="18" position="-8 9 8" shadow="cast: true"></a-cylinder>
+            <a-cylinder color="#006400" radius="1.8" height="14" position="5 7 -10" shadow="cast: true"></a-cylinder>
+             <a-cylinder color="#2E8B57" radius="2.2" height="16" position="-15 8 -5" shadow="cast: true"></a-cylinder>
+         </a-entity>
 
-  // --- Update Button Text on Fullscreen Change ---
-  function updateFullscreenButton() {
-    if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
-      fullscreenButton.textContent = 'Exit Fullscreen';
-    } else {
-      fullscreenButton.textContent = 'Go Fullscreen';
-    }
-  }
+        <a-entity position="0 1.6 10"> <a-camera wasd-controls="acceleration: 80" look-controls="pointerLockEnabled: true">
+                 </a-camera>
+        </a-entity>
 
-  document.addEventListener('fullscreenchange', updateFullscreenButton);
-  document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
-  document.addEventListener('mozfullscreenchange', updateFullscreenButton);
-  document.addEventListener('MSFullscreenChange', updateFullscreenButton);
-
-
-  // --- Dark Mode Toggle Logic ---
-  function applyTheme(theme) {
-     if (theme === 'dark') {
-       bodyElement.setAttribute('data-theme', 'dark');
-       themeToggleButton.textContent = 'Toggle Light Mode';
-     } else {
-       bodyElement.removeAttribute('data-theme');
-       themeToggleButton.textContent = 'Toggle Dark Mode';
-     }
-  }
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) { applyTheme(savedTheme); }
-  themeToggleButton.addEventListener('click', () => {
-    const currentTheme = bodyElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    applyTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-  });
-
-</script>
-
+    </a-scene>
 </body>
 </html>
