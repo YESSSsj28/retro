@@ -1,6 +1,66 @@
-<iframe src="www.crazygames.com" 
-        width="800" 
-        height="600" 
-        style="border:none;" 
-        title="Retro Bowl Game">
+<!DOCTYPE html>
+<html>
+<head>
+<title>Retro Bowl</title>
+<style>
+  /* Optional: Basic styling to center things */
+  body { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    min-height: 100vh; 
+    margin: 0; 
+    background-color: #f0f0f0; /* Light grey background to see iframe boundary */
+  }
+  iframe {
+    border: none; /* Remove default iframe border */
+  }
+  button {
+    margin-top: 15px; /* Space between iframe and button */
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>Retro Bowl</h1>
+
+<iframe 
+    id="gameFrame" 
+    src="https://msn-21.github.io/games/retro-bowl/" 
+    width="800" 
+    height="600" 
+    allowfullscreen="true"  title="Retro Bowl Game">
 </iframe>
+
+<button id="fullscreenBtn">Go Fullscreen</button>
+
+<script>
+  // Get references to the button and the iframe
+  const fullscreenButton = document.getElementById('fullscreenBtn');
+  const gameIframe = document.getElementById('gameFrame');
+
+  // Add event listener to the button
+  fullscreenButton.addEventListener('click', () => {
+    // Check if fullscreen is supported and request it for the iframe
+    if (gameIframe.requestFullscreen) {
+      gameIframe.requestFullscreen();
+    } else if (gameIframe.mozRequestFullScreen) { /* Firefox */
+      gameIframe.mozRequestFullScreen();
+    } else if (gameIframe.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+      gameIframe.webkitRequestFullscreen();
+    } else if (gameIframe.msRequestFullscreen) { /* IE/Edge */
+      gameIframe.msRequestFullscreen();
+    }
+  });
+
+  // Optional: You might want to listen for fullscreen changes 
+  // to change the button text (e.g., to "Exit Fullscreen"), 
+  // but this basic version just triggers entering fullscreen.
+</script>
+
+</body>
+</html>
