@@ -1,65 +1,287 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Retro Bowl</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Bowl - Modernized</title>
 <style>
-  /* Optional: Basic styling to center things */
-  body { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-    min-height: 100vh; 
-    margin: 0; 
-    background-color: #f0f0f0; /* Light grey background to see iframe boundary */
+  /* --- CSS Variables for Theming --- */
+  :root {
+    --bg-color: #f4f7f6; /* Light grey background */
+    --text-color: #333;
+    --iframe-bg: #ffffff; /* White background for iframe container */
+    --button-bg: #007bff;
+    --button-text: #ffffff;
+    --button-hover-bg: #0056b3;
+    --note-text: #555;
+    --border-color: #ccc;
+    --shadow-color: rgba(0, 0, 0, 0.1);
   }
-  iframe {
-    border: none; /* Remove default iframe border */
+
+  [data-theme="dark"] {
+    --bg-color: #2c3e50; /* Dark background */
+    --text-color: #ecf0f1;
+    --iframe-bg: #34495e; /* Darker background for iframe container */
+    --button-bg: #3498db;
+    --button-text: #ffffff;
+    --button-hover-bg: #2980b9;
+    --note-text: #bdc3c7;
+    --border-color: #555;
+    --shadow-color: rgba(0, 0, 0, 0.4);
   }
-  button {
-    margin-top: 15px; /* Space between iframe and button */
+
+  /* --- General Styles --- */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 850px; /* Max width for content */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--iframe-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    transition: background-color 0.3s;
+  }
+
+  h1 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  /* --- Iframe & Loader --- */
+  .iframe-container {
+    position: relative; /* Needed for loader positioning */
+    width: 100%;
+    max-width: 800px; /* Match iframe width */
+    height: 600px; /* Match iframe height */
+    background-color: #e0e0e0; /* Placeholder background */
+    border-radius: 4px;
+    overflow: hidden; /* Clip iframe corners if needed */
+  }
+
+  #gameLoader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+    color: white;
+    font-size: 1.5em;
+    z-index: 10; /* Above iframe initially */
+    border-radius: 4px;
+  }
+
+  iframe#gameFrame {
+    display: block; /* Removes tiny space below iframe */
+    border: none;
+    width: 100%; /* Fill container */
+    height: 100%; /* Fill container */
+    vertical-align: bottom; /* Another fix for potential spacing issues */
+  }
+
+  /* --- Controls & Notes --- */
+  .controls {
+    display: flex;
+    gap: 15px; /* Space between buttons */
+    margin-top: 20px;
+    align-items: center;
+  }
+
+  button#fullscreenBtn, button#themeToggleBtn {
     padding: 10px 20px;
-    font-size: 16px;
+    font-size: 1em;
+    color: var(--button-text);
+    background-color: var(--button-bg);
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
   }
+
+  button#fullscreenBtn:hover, button#themeToggleBtn:hover {
+    background-color: var(--button-hover-bg);
+  }
+
+  .notes {
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: var(--note-text);
+    text-align: center;
+    max-width: 600px;
+  }
+
+  /* --- Basic Responsiveness --- */
+   @media (max-width: 850px) {
+     .iframe-container {
+        /* Adjust height based on aspect ratio (800/600 = 4/3 = 75%) */
+        height: auto;
+        padding-bottom: 75%; /* Aspect ratio padding hack */
+     }
+     iframe#gameFrame {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+     }
+     .controls {
+        flex-direction: column;
+     }
+   }
+   @media (max-width: 480px) {
+        body { padding: 10px; }
+        .container { padding: 15px; }
+        h1 { font-size: 1.5em; }
+   }
+
 </style>
 </head>
 <body>
 
-<h1>Retro Bowl</h1>
+<div class="container">
+  <h1>Retro Bowl</h1>
 
-<iframe 
-    id="gameFrame" 
-    src="https://msn-21.github.io/games/retro-bowl/" 
-    width="800" 
-    height="600" 
-    allowfullscreen="true"  title="Retro Bowl Game">
-</iframe>
+  <div class="iframe-container">
+    <div id="gameLoader">Loading Game...</div>
 
-<button id="fullscreenBtn">Go Fullscreen</button>
+    <iframe
+        id="gameFrame"
+        src="https://msn-21.github.io/games/retro-bowl/"
+        allowfullscreen="true"
+        title="Retro Bowl Game">
+    </iframe>
+  </div>
+
+  <div class="controls">
+    <button id="fullscreenBtn">Go Fullscreen</button>
+    <button id="themeToggleBtn">Toggle Dark Mode</button>
+  </div>
+
+  <p class="notes">
+    Use the fullscreen button for a better experience. Game progress should save automatically within the game itself.
+  </p>
+</div>
+
 
 <script>
-  // Get references to the button and the iframe
+  // --- Element References ---
   const fullscreenButton = document.getElementById('fullscreenBtn');
   const gameIframe = document.getElementById('gameFrame');
+  const gameLoader = document.getElementById('gameLoader');
+  const themeToggleButton = document.getElementById('themeToggleBtn');
+  const bodyElement = document.body;
 
-  // Add event listener to the button
-  fullscreenButton.addEventListener('click', () => {
-    // Check if fullscreen is supported and request it for the iframe
-    if (gameIframe.requestFullscreen) {
-      gameIframe.requestFullscreen();
-    } else if (gameIframe.mozRequestFullScreen) { /* Firefox */
-      gameIframe.mozRequestFullScreen();
-    } else if (gameIframe.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
-      gameIframe.webkitRequestFullscreen();
-    } else if (gameIframe.msRequestFullscreen) { /* IE/Edge */
-      gameIframe.msRequestFullscreen();
+  // --- Hide Loader When Iframe Finishes Loading ---
+  gameIframe.addEventListener('load', () => {
+    gameLoader.style.display = 'none'; // Hide the loader
+  });
+  // Fallback: Hide loader after a timeout if 'load' event doesn't fire reliably
+  setTimeout(() => {
+      if (gameLoader) gameLoader.style.display = 'none';
+  }, 8000); // Hide after 8 seconds regardless
+
+
+  // --- Fullscreen Logic ---
+  function toggleFullScreen() {
+    if (!document.fullscreenElement &&    // Standard
+        !document.mozFullScreenElement && // Firefox
+        !document.webkitFullscreenElement && // Chrome, Safari and Opera
+        !document.msFullscreenElement) {  // IE/Edge
+      // --- Request Fullscreen ---
+      if (gameIframe.requestFullscreen) {
+        gameIframe.requestFullscreen();
+      } else if (gameIframe.mozRequestFullScreen) { /* Firefox */
+        gameIframe.mozRequestFullScreen();
+      } else if (gameIframe.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+        gameIframe.webkitRequestFullscreen();
+      } else if (gameIframe.msRequestFullscreen) { /* IE/Edge */
+        gameIframe.msRequestFullscreen();
+      }
+    } else {
+      // --- Exit Fullscreen ---
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) { /* Firefox */
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { /* IE/Edge */
+        document.msExitFullscreen();
+      }
     }
+  }
+
+  fullscreenButton.addEventListener('click', toggleFullScreen);
+
+  // --- Update Button Text on Fullscreen Change ---
+  function updateFullscreenButton() {
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+      fullscreenButton.textContent = 'Exit Fullscreen';
+    } else {
+      fullscreenButton.textContent = 'Go Fullscreen';
+    }
+  }
+
+  document.addEventListener('fullscreenchange', updateFullscreenButton);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+  document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+  document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
+
+  // --- Dark Mode Toggle Logic ---
+  // Function to set theme based on preference
+  function applyTheme(theme) {
+     if (theme === 'dark') {
+       bodyElement.setAttribute('data-theme', 'dark');
+       themeToggleButton.textContent = 'Toggle Light Mode';
+     } else {
+       bodyElement.removeAttribute('data-theme');
+       themeToggleButton.textContent = 'Toggle Dark Mode';
+     }
+  }
+
+  // Check local storage for saved theme preference
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    applyTheme(savedTheme);
+  } else {
+    // Optional: Check system preference if no saved theme
+    // const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // applyTheme(prefersDark ? 'dark' : 'light');
+  }
+
+  // Button click handler
+  themeToggleButton.addEventListener('click', () => {
+    const currentTheme = bodyElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(newTheme);
+    // Save preference to local storage
+    localStorage.setItem('theme', newTheme);
   });
 
-  // Optional: You might want to listen for fullscreen changes 
-  // to change the button text (e.g., to "Exit Fullscreen"), 
-  // but this basic version just triggers entering fullscreen.
 </script>
 
 </body>
