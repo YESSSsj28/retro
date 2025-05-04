@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minecraft Battle Royale</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: Arial;
+            font-size: 24px;
+            z-index: 100;
+        }
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading Game Assets...</div>
+    <div id="crosshair">+</div>
+    
+    <!-- Three.js and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<script>
+// Configuration
+const CONFIG = {
+    CHARACTER_SCALE: 0.5,      // Adjust based on your model size
+    MAP_SCALE: 1,              // Adjust based on your map size
+    MOVEMENT_SPEED: 0.1,
+    CAMERA_HEIGHT: 1.6         // Eye level height
+};
+
+let camera, scene, renderer, controls;
+let moveForward = false, moveLeft = false, moveBackward = false, moveRight = false;
+let character, map;
+
+async function init() {
+    // Setup Three.js core components
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Add lighting
+    addBasicLighting();
+
+    // Load assets
+    await loadAssets();
+    
+    // Setup game controls
+    setupGameControls();
+
+    // Hide loading screen
+    document.getElementById('loading').style.display = 'none';
+}
+
+function addBasicLighting() {
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(0, 50, 0);
+    scene.add(directionalLight);
+}
+
+async function loadAssets() {
+    // Load map
+    await new Promise((resolve, reject) => {
+        new THREE.GLTFLoader().load('assets/map.glb', (gltf) => {
+            map = gltf.scene;
+            map.scale.set(CONFIG.MAP_SCALE, CONFIG.MAP_SCALE, CONFIG.MAP_SCALE);
+            scene.add(map);
+            resolve();
+        }, undefined, reject);
+    });
+
+    // Load character
+    await new Promise((resolve, reject) => {
+        new THREE.GLTFLoader().load('assets/character.glb', (gltf) => {
+            character = gltf.scene;
+            character.scale.set(CONFIG.CHARACTER_SCALE, CONFIG.CHARACTER_SCALE, CONFIG.CHARACTER_SCALE);
+            character.position.set(0, 0, 0);
+            scene.add(character);
+            resolve();
+        }, undefined, reject);
+    });
+
+    // Position camera
+    camera.position.set(0, CONFIG.CAMERA_HEIGHT, 0);
+}
+
+function setupGameControls() {
+    // Pointer lock controls
+    controls = new THREE.PointerLockControls(camera, document.body);
+    
+    // Click handler to start controls
+    document.addEventListener('click', () => controls.lock());
+
+    // Keyboard controls
+    const keyHandler = (e, state) => {
+        switch(e.code) {
+            case 'KeyW': moveForward = state; break;
+            case 'KeyA': moveLeft = state; break;
+            case 'KeyS': moveBackward = state; break;
+            case 'KeyD': moveRight = state; break;
+        }
+    };
+    
+    document.addEventListener('keydown', (e) => keyHandler(e, true));
+    document.addEventListener('keyup', (e) => keyHandler(e, false));
+
+    // Window resize handler
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (controls.isLocked) {
+        // Movement
+        if (moveForward) controls.moveForward(CONFIG.MOVEMENT_SPEED);
+        if (moveBackward) controls.moveForward(-CONFIG.MOVEMENT_SPEED);
+        if (moveLeft) controls.moveRight(-CONFIG.MOVEMENT_SPEED);
+        if (moveRight) controls.moveRight(CONFIG.MOVEMENT_SPEED);
+
+        // Sync character with camera
+        if (character) {
+            character.position.copy(camera.position);
+            character.rotation.copy(camera.rotation);
+            character.position.y -= CONFIG.CAMERA_HEIGHT;
+        }
+    }
+
+    renderer.render(scene, camera);
+}
+
+// Start the game
+init().then(animate);
+</script>
+</body>
+</html>
