@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yugsblade</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #050509;
+      color: #ffffff;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-bar {
+      height: 64px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 18px;
+      background: linear-gradient(90deg, #090912, #151528, #090912);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45);
+      z-index: 10;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 0 0 14px rgba(95, 125, 255, 0.85);
+      white-space: nowrap;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      border: 0;
+      outline: 0;
+      cursor: pointer;
+      color: white;
+      font-weight: 800;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #25254a;
+      box-shadow: 0 0 12px rgba(70, 95, 255, 0.35);
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: #35356d;
+    }
+
+    .game-wrap {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      background: #000;
+    }
+
+    .game-wrap.mini {
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: radial-gradient(circle at center, #14142b, #050509 70%);
+    }
+
+    .game-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
+    }
+
+    .game-wrap.mini .game-frame {
+      width: min(100%, 960px);
+      height: min(80vh, 540px);
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      border-radius: 18px;
+      box-shadow: 0 0 35px rgba(80, 100, 255, 0.35);
+      overflow: hidden;
+    }
+
+    #download-logo {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      width: 56px;
+      height: 56px;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .fullscreen-mode .top-bar {
+      display: none;
+    }
+
+    .fullscreen-mode .game-wrap {
+      height: 100vh;
+    }
+
+    @media (max-width: 600px) {
+      .top-bar {
+        height: auto;
+        min-height: 64px;
+        flex-wrap: wrap;
+        padding: 10px;
+      }
+
+      .title {
+        font-size: 22px;
+      }
+
+      button {
+        padding: 9px 10px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="top-bar">
+    <div class="title">Yugsblade</div>
+    <div class="buttons">
+      <button id="miniBtn">Mini Game</button>
+      <button id="normalBtn">Normal Screen</button>
+      <button id="fullscreenBtn">Full Screen</button>
+    </div>
+  </header>
+
+  <main id="gameWrap" class="game-wrap">
+    <iframe
+      id="gameFrame"
+      class="game-frame"
+      src="https://lovers-of-christ.stgenevieveschool.us/assets/src/blade-ball/index.html"
+      allow="fullscreen; gamepad; autoplay"
+      allowfullscreen>
+    </iframe>
+  </main>
+
+  <img
+    id="download-logo"
+    src="https://cdn.jsdelivr.net/gh/JustJxrdanWasDefinetlyTaken/celestial@main/public/assets/img/logo.png"
+    alt="logo">
+
+  <script>
+    const gameWrap = document.getElementById('gameWrap');
+    const miniBtn = document.getElementById('miniBtn');
+    const normalBtn = document.getElementById('normalBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+    function enterMiniGame() {
+      gameWrap.classList.add('mini');
+    }
+
+    function enterNormalScreen() {
+      gameWrap.classList.remove('mini');
+      document.body.classList.remove('fullscreen-mode');
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    }
+
+    async function toggleFullScreen() {
+      try {
+        if (!document.fullscreenElement) {
+          gameWrap.classList.remove('mini');
+          document.body.classList.add('fullscreen-mode');
+          await document.documentElement.requestFullscreen();
+        } else {
+          document.body.classList.remove('fullscreen-mode');
+          await document.exitFullscreen();
+        }
+      } catch (error) {
+        alert('Fullscreen could not start. Try clicking the button again.');
+      }
+    }
+
+    miniBtn.addEventListener('click', enterMiniGame);
+    normalBtn.addEventListener('click', enterNormalScreen);
+    fullscreenBtn.addEventListener('click', toggleFullScreen);
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        document.body.classList.remove('fullscreen-mode');
+      }
+    });
+  </script>
+</body>
+</html>
